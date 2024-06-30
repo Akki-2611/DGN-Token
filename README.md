@@ -1,4 +1,4 @@
-# Smart Contract for Error Handling
+# Smart Contract for creating DGN Token
 This contract is written in Solidity, a programming language designed for building smart contracts on the Ethereum blockchain.
 # Description
 This smart contract demonstrates the functionalities of a token called "Degen" (DGN) with a redemption system for a reward named "Kitty." It showcases essential error-handling mechanisms in Solidity using "require" statements. These ensure proper function execution and prevent unexpected behavior. A verified smart contract on Snowtrace.
