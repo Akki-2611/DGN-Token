@@ -1,0 +1,118 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.21;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Kitty is ERC20, Ownable {
+    constructor() ERC20("Degen", "DGN") Ownable(msg.sender) {}
+
+struct RedeemedKittyFood {
+    uint256 quantity;          
+    uint256 KittyRedeemed;  
+}
+
+event KittyRedeemed(address indexed redeemer, uint256 quantity, uint256 KittyRedeemed);
+
+uint256 public KittyCost = 1; 
+
+mapping(address => RedeemedKittyFood[]) private RedeemedKittyFoods;
+
+
+function mint(address to, uint256 quantity) public onlyOwner {
+    require(to != address(0), "Cannot mint to zero address");
+    require(quantity > 0, "Kitty minting quantity must be greater than zero");
+    _mint(to, quantity);
+}
+
+
+function burn(uint256 quantity) public {
+    require(quantity > 0, "Kitty burning quantity must be greater than zero");
+    _burn(_msgSender(), quantity);
+}
+
+
+function redeem(uint256 quantity) public {
+    require(quantity > 0, "Kitty redeemed quantity must be greater than zero");
+    uint256 cost = quantity * KittyCost;
+    require(balanceOf(_msgSender()) >= cost, "Insufficient kitties");
+
+   
+    _burn(_msgSender(), cost);
+
+   
+    RedeemedKittyFoods[_msgSender()].push(RedeemedKittyFood({
+        quantity: quantity,
+        KittyRedeemed: cost
+    }));
+
+    emit KittyRedeemed(_msgSender(), quantity, cost);
+}
+
+
+function getRedeemedKittyFoods(address account) public view returns (RedeemedKittyFood[] memory) {
+    require(account != address(0), "Query for zero address");
+    return RedeemedKittyFoods[account];
+}
+
+
+function printRedeemedKitty(address account) public view returns (string memory) {
+    require(account != address(0), "Query for zero address");
+    RedeemedKittyFood[] memory items = RedeemedKittyFoods[account];
+    require(items.length > 0, "No redeemed Kitty found");
+
+    string memory result = "";
+    for (uint i = 0; i < items.length; i++) {
+        result = string(abi.encodePacked(
+            result,
+            "Redemption ", uintToString(i + 1), ": ", 
+            "Quantity: ", uintToString(items[i].quantity), 
+            " Kitty Redeemed: ", uintToString(items[i].KittyRedeemed), 
+            "\n"
+        ));
+    }
+    return result;
+}
+
+
+function uintToString(uint256 v) internal pure returns (string memory) {
+    if (v == 0) {
+        return "0";
+    }
+    uint256 digits;
+    uint256 temp = v;
+    while (temp != 0) {
+        digits++;
+        temp /= 10;
+    }
+    bytes memory buffer = new bytes(digits);
+    while (v != 0) {
+        digits -= 1;
+        buffer[digits] = bytes1(uint8(48 + uint256(v % 10)));
+        v /= 10;
+    }
+    return string(buffer);
+}
+
+
+function checkBalance(address account) public view returns (uint256) {
+    require(account != address(0), "Query for zero address");
+    return balanceOf(account);
+}
+
+
+function transferKitty(address from, address to, uint256 quantity) public {
+    require(quantity > 0, "Transfer quantity must be greater than zero");
+    require(from != address(0), "Cannot transfer from zero address");
+    require(to != address(0), "Cannot transfer to zero address");
+
+    if (from == _msgSender()) {
+        _transfer(from, to, quantity);
+    } else {
+        uint256 currentAllowance = allowance(from, _msgSender());
+        require(currentAllowance >= quantity, "Transfer quantity exceeds allowance");
+        _approve(from, _msgSender(), currentAllowance - quantity);
+        _transfer(from, to, quantity);
+    }
+}
+}
